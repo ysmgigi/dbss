@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+sock_info *sockinfo = NULL;
+
 // dbss作为服务端
 // 初始化服务器端socket
 void init_server() {
@@ -37,10 +39,10 @@ void init_server() {
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	epoll_addfd(efd_server, fd, EPOLLIN);
+	epoll_addfd(efd, fd, EPOLLIN);
 }
 
-void *connect_thread(void *arg) {
+void *reconnect_thread(void *arg) {
 	pthread_detach(pthread_self());
 	rte_atomic32_inc(&thread_num);
 	int i;
@@ -57,10 +59,9 @@ void *connect_thread(void *arg) {
 					continue;
 				}
 				if(fd >= DESCRIPTOR_MAX) {
-					printf("Too many connections, max is %d, %s, %s, %d\n", DESCRIPTOR_MAX, __FUNCTION__, __FILE__, __LINE__);
+					printf("Too many connections %d/%d, %s, %s, %d\n", fd, DESCRIPTOR_MAX, __FUNCTION__, __FILE__, __LINE__);
 					close(fd);
-					//exit(EXIT_FAILURE);
-					continue;
+					exit(EXIT_FAILURE);
 				}
 				// connect to server
 				struct sockaddr_in addr;
@@ -69,34 +70,12 @@ void *connect_thread(void *arg) {
 				addr.sin_port = htons(clientinfo[i].port);
 				inet_pton(AF_INET, clientinfo[i].ip, &addr.sin_addr);
 				if(connect(fd, (struct sockaddr*)&addr, sizeof addr) < 0) {
-					printf("Failed to connect to %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
-					close(fd);
-					continue;
-				}
-				// make a flag that this server has been connected successfully
-				clientinfo[i].connected = 1;
-				// add to epoll control
-				Socket *sp = &socketMgr[fd];
-				pthread_spin_lock(&sp->lock);
-				if(sp->fd == -1) {
-					sp->fd = fd;
-					sp->port = clientInfoMgr.clients[i].port;
-					sp->type = TYPE_SERVER;
-					strncpy(sp->ip, clientInfoMgr.clients[i].ip, INET_ADDRSTRLEN);
-					--remain;
-					EpollAddFd(epollMgr->efd, fd, EPOLLOUT | EPOLLRDHUP);
-				}
-				/*else { // impossible here
-					if(sp->fd == fd) {
-						printf("File descriptor %d has been added, %s, %s, %d\n", fd, __FUNCTION__, __FILE__, __LINE__);
+					if(errno != EINPROGRESS) {
+						printf("Failed to connect to %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
 						close(fd);
+						continue;
 					}
-					else {
-						printf("File descriptor %d conflict with the old one %d, %s, %s, %d\n", fd, sp->fd, __FUNCTION__, __FILE__, __LINE__);
-						close(fd);
-					}
-				}*/
-				pthread_spin_unlock(&sp->lock);
+				}
 			}
 		}
 		nanosleep(&req, NULL);
@@ -110,7 +89,7 @@ void *connect_thread(void *arg) {
 // 开启一个线程去连接服务端:若连上，则将描述符添加到epoll控制
 void init_client() {
 	pthread_t tid;
-	if(pthread_create(&tid, NULL, connect_thread, NULL) != 0) {
+	if(pthread_create(&tid, NULL, reconnect_thread, NULL) != 0) {
 		printf("Failed to create connect_thread, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}

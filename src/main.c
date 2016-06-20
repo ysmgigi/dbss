@@ -27,15 +27,15 @@ void init_signal() {
 	sigprocmask(SIG_BLOCK, &mask, NULL);
 	// create signal file descriptor and add to epoll control
 	if((sigfd = signalfd(-1, &mask, 0)) < 0) {
-		printf("Failed to create signalfd", __FUNCTION__, __FILE__, __LINE__);
+		printf("Failed to create signalfd, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
-	epoll_addfd(epollMgr->efd, sigfd, EPOLLIN);
+	epoll_addfd(efd, sigfd, EPOLLIN);
 }
 
 int main(int argc, char *argv[]) {
-	rte_atomic32_init(&threadNum);
-	rte_atomic32_set(&keepRunning, 1);
+	rte_atomic32_init(&thread_num);
+	rte_atomic32_set(&keep_running, 1);
 	// 初始化epoll管理结构
 	epoll_init();
 	init_signal();
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 	epoll_event_loop();
 
 	// close signal fd
-	if(rte_atomic32_read(&keepRunning) == 0) {
+	if(rte_atomic32_read(&keep_running) == 0) {
 		close(sigfd);
 	}
 }

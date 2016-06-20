@@ -72,7 +72,24 @@ void epoll_destroy() {
 }
 
 void epoll_event_loop() {
+	int num = 0;
+	int fd = -1;
+	uint32_t event = 0;
 	while(rte_atomic32_read(&keep_running)) {
+		num = epoll_wait(efd, events, DESCRIPTOR_MAX, -1);
+		if(num < 0) {
+#ifdef DEBUG_STDOUT
+			printf("Failed to epoll_wait, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+			rte_atomic32_set(&keep_running, 0);
+			exit(EXIT_FAILURE);
+		}
+		int i;
+		for(i=0; i<num; ++i) {
+			fd = events[i].data.fd;
+			events = events[i].events;
+		}
 	}
 }
 
