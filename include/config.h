@@ -58,10 +58,10 @@ extern int client_num;
 extern client_info *clientinfo;
 
 // 读系统配置文件
-void readsystemconfig();
+void read_sys_config();
 
 // 读表结构配置文件
-void readtableconfig();
+void read_table_config();
 
 #ifdef __cplusplus
 }

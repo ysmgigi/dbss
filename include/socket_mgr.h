@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <arpa/inet.h>
-#include "general.h"
 
 #define TYPE_CLIENT		1
 #define TYPE_SERVER		2
@@ -11,23 +10,14 @@
 
 // socket socketection
 typedef struct {
-	int fd;
+	uint8_t type;	// 1-Client  2-Server 3-Listen
 	uint16_t port;
-	uint8_t type;	// 1-客户端  2-服务端 3-Listen
-	pthread_spinlock_t lock;
-	char ip[INET_ADDRSTRLEN];
-	int32_t len;
-	char *data;
-}Socket;
+	int32_t fd;
+	uint32_t ip;
+}conn_info;
 
-// socket管理
-extern Socket *socketMgr;
-
-void InitSocket(Socket *s, int len);
-void InitSocketMgr();
-void DestroySocketMgr();
-void InitServerEnd();
-void InitClientEnd();
+void init_server();
+void init_client();
 
 #endif
 

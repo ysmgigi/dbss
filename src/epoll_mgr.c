@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "general.h"
+#include "sysctl.h"
 #include "epoll_mgr.h"
+#include "rte_atomic.h"
 
 #ifdef __cplusplus
 extern "C" {

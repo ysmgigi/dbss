@@ -37,13 +37,12 @@ int main(int argc, char *argv[]) {
 	rte_atomic32_init(&threadNum);
 	rte_atomic32_set(&keepRunning, 1);
 	// 初始化epoll管理结构
-	init_epoll();
+	epoll_init();
 	init_signal();
 	// 读取系统配置文件
 	read_sys_config();
 	read_table_config();
 	// 初始化socket管理结构,创建服务端socket,建立客户端socket连接
-	init_socket_mgr();
 	init_server();
 	init_client();
 

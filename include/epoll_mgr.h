@@ -7,10 +7,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
-#include "general.h"
 
 extern int efd;
-extern struct epoll_event *enents;
+extern struct epoll_event *events;
 
 void set_reuse_addr(int fd);
 int set_nonblock(int fd);
