@@ -7,6 +7,7 @@
 #define TYPE_CLIENT		1
 #define TYPE_SERVER		2
 #define TYPE_LISTEN		3
+#define TYPE_SIGNAL		4
 
 // socket socketection
 typedef struct {

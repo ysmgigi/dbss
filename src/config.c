@@ -155,7 +155,7 @@ void read_sys_config() {
 			clientinfo[i].port = atoi(port);
 			clientinfo[i].connected = 0;
 #ifdef DEBUG_STDOUT
-			printf("clientinfo[%d]: ip=%s, port=%d, connected=%d\n", i, clientinfo[i].ip, clientinfo[i].port, clientinfo.connected);
+			printf("clientinfo[%d]: ip=%s, port=%d, connected=%d\n", i, clientinfo[i].ip, clientinfo[i].port, clientinfo[i].connected);
 #endif
 		}
 	}

@@ -16,7 +16,8 @@ extern "C" {
 
 int sigfd = 0;
 
-void init_signal() {
+// signal init
+void signal_init() {
 	// block signals
 	sigset_t mask;
 	sigemptyset(&mask);
@@ -33,7 +34,14 @@ void init_signal() {
 #endif
 		exit(EXIT_FAILURE);
 	}
+	sockinfo[sigfd].fd = sigfd;
+	sockinfo[sigfd].type = TYPE_SIGNAL;
 	epoll_addfd(efd, sigfd, EPOLLIN);
+}
+
+// signal cleanup
+void signal_destroy() {
+	close(sigfd);
 }
 
 // 初始化系统资源
@@ -41,10 +49,10 @@ void init() {
 	rte_atomic32_init(&thread_num);
 	rte_atomic32_set(&keep_running, 1);
 	// 初始化连接管理结构
-	init_socke_mgr();
+	init_sock_mgr();
 	// 初始化epoll管理结构
 	epoll_init();
-	init_signal();
+	signal_init();
 	// 读取系统配置文件
 	read_sys_config();
 	read_table_config();
@@ -55,13 +63,13 @@ void init() {
 }
 
 int main(int argc, char *argv[]) {
+	// init system resource
 	init();
-
+	// epoll events loop
 	epoll_event_loop();
-
-	// close signal fd
+	// signal cleanup
 	if(rte_atomic32_read(&keep_running) == 0) {
-		close(sigfd);
+		signal_destroy();
 	}
 }
 

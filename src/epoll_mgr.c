@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/signalfd.h>
 #include "general.h"
 #include "sysctl.h"
 #include "epoll_mgr.h"
 #include "rte_atomic.h"
+#include "socket_mgr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +75,69 @@ void epoll_destroy() {
 		free(events);
 }
 
+// handle signals
+void signal_handle(int fd) {
+	struct signalfd_siginfo si;
+	struct timespec req = {0, 10000};
+	int sl = sizeof si;
+	memset(&si, 0, sl);
+	if(read(fd, &si, sl) < 0) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to read sigfd, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+#ifdef DEBUG_STDOUT
+		printf("Signal %d happens, will terminate system\n", si.ssi_signo);
+#else
+#endif
+		rte_atomic32_set(&keep_running, 0);
+		// wait until all threads  exit, clean up system resource.
+		while(rte_atomic32_read(&thread_num) > 0) {
+			nanosleep(&req, NULL);
+		}
+		// cleanup
+		// system_clean_up();
+}
+
+void accept_client(int lsnfd) {
+	int cfd = 0;
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof addr;
+	cfd = accept(lsnfd, (struct sockaddr*)&addr, &addrlen);
+	if(cfd < 0) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to accept new client, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+	// too many connections
+	if(cfd >= DESCRIPTOR_MAX) {
+#ifdef DEBUG_STDOUT
+		printf("File exceeded the max %d, %s, %s, %d\n", DESCRIPTOR_MAX, __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		close(cfd);
+		return;
+	}
+	if(sockinfo[cfd].fd == 0) {
+		sockinfo[cfd].fd = cfd;
+		sockinfo[cfd].type = TYPE_CLIENT;
+		epoll_addfd(efd, cfd, EPOLLIN | EPOLLRDHUP);
+	}
+}
+
+// clean up sockinfo and close client fd
+void close_client(int fd) {
+	sockinfo[fd].fd = 0;
+	sockinfo[fd].type = 0;
+	sockinfo[fd].ip = 0;
+	sockinfo[fd].port = 0;
+	close(fd);
+}
+
 // 
 void epoll_event_loop() {
 	int num = 0;
@@ -90,7 +156,28 @@ void epoll_event_loop() {
 		int i;
 		for(i=0; i<num; ++i) {
 			fd = events[i].data.fd;
-			events = events[i].events;
+			event = events[i].events;
+			// new client comes, accept it and add to epoll event loop
+			if(sockinfo[fd].type == TYPE_LISTEN && (event & EPOLLIN)) {
+				accept_client(fd);
+			}
+			// data from client, read data and put data into receive/send buffer.
+			else if(sockinfo[fd].type == TYPE_CLIENT && (event & EPOLLIN)) {
+			}
+			// client closed, close local socket and clean up sockinfo
+			else if(sockinfo[fd].type == TYPE_CLIENT && (event & EPOLLRDHUP)) {
+				close_client(fd);
+			}
+			// server can wirte, get data from its queue and send.
+			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLOUT)) {
+			}
+			// server closed
+			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLRDHUP)) {
+			}
+			// signal occured
+			else if(sockinfo[fd].type == TYPE_SIGNAL && (event & EPOLLIN)) {
+				signal_handle(fd);
+			}
 		}
 	}
 }
