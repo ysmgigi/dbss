@@ -27,24 +27,35 @@ void init_signal() {
 	sigprocmask(SIG_BLOCK, &mask, NULL);
 	// create signal file descriptor and add to epoll control
 	if((sigfd = signalfd(-1, &mask, 0)) < 0) {
+#ifdef DEBUG_STDOUT
 		printf("Failed to create signalfd, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		exit(EXIT_FAILURE);
 	}
 	epoll_addfd(efd, sigfd, EPOLLIN);
 }
 
-int main(int argc, char *argv[]) {
+// 初始化系统资源
+void init() {
 	rte_atomic32_init(&thread_num);
 	rte_atomic32_set(&keep_running, 1);
+	// 初始化连接管理结构
+	init_socke_mgr();
 	// 初始化epoll管理结构
 	epoll_init();
 	init_signal();
 	// 读取系统配置文件
 	read_sys_config();
 	read_table_config();
-	// 初始化socket管理结构,创建服务端socket,建立客户端socket连接
+	// 创建服务端socket
 	init_server();
+	// 建立客户端socket,创建重连线程
 	init_client();
+}
+
+int main(int argc, char *argv[]) {
+	init();
 
 	epoll_event_loop();
 

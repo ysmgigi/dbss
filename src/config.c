@@ -65,13 +65,13 @@ void read_sys_config() {
 	// SystemConfigDir
 	p = iniparser_getstring(dic, "SystemConfigDir:dir", NULL);
 	p != NULL ? strncpy(sysconf_dir, p, BYTE128) : 0;
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[SysConfigDir]: %s\n", sysconf_dir);
 #endif
 	// TableDefineDir
 	p = iniparser_getstring(dic, "TableConfigDir:dir", NULL);
 	p != NULL ? strncpy(tblconf_dir, p, BYTE128) : 0;
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[TableConfigDir]: %s\n", tblconf_dir);
 #endif
 	// DataControl
@@ -82,7 +82,7 @@ void read_sys_config() {
 		else if(strcmp(p, "file") == 0)
 			data_src = DATASOURCE_FILE;
 	}
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[DataSource]: %d\n", data_src);
 #endif
 	// DataDest
@@ -93,7 +93,7 @@ void read_sys_config() {
 		else if(strcmp(p, "file") == 0)
 			data_dst = DATADEST_FILE;
 	}
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[DataDest]: %d\n", data_dst);
 #endif
 	// Oracle
@@ -103,33 +103,33 @@ void read_sys_config() {
 	p != NULL ? strncpy(user, p, BYTE32): 0;
 	p = iniparser_getstring(dic, "Oracle:password", NULL);
 	p != NULL ? strncpy(password, p, BYTE32): 0;
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[service]: %s\n", service);
 	printf("[user]: %s\n", user);
 	printf("[password]: %s\n", password);
 #endif
 	dpbfs = iniparser_getint(dic, "DirectPath:buffer", 65536);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[dpbfs]: %d\n", dpbfs);
 #endif
 	// ReceivePool
 	rcvps = iniparser_getint(dic, "ReceivePool:num", 100000);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[ReceivePoolNodeNum]: %d\n", rcvps);
 #endif
 	// TablePool
 	tblps = iniparser_getint(dic, "TablePool:num", 100000);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[TablePoolNodeNum]: %d\n", rcvps);
 #endif
 	// Server
 	lsn_port = iniparser_getint(dic, "Server:port", 0);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[ServerPort]: %d\n", lsn_port);
 #endif
 	// Client
 	client_num = iniparser_getint(dic, "Client:num", 0);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 	printf("[ClientNum]: %d\n", client_num);
 #endif
 	clientinfo = (client_info*)calloc(client_num, sizeof(client_info));
@@ -143,7 +143,7 @@ void read_sys_config() {
 		char cli[BYTE16] = {0};
 		snprintf(cli, BYTE16, "Client:c%d", i+1);
 		p = iniparser_getstring(dic, cli, NULL);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 		if(p != NULL)
 			printf("c%d=%s\n", i+1, p);
 #endif
@@ -154,7 +154,7 @@ void read_sys_config() {
 			char *port = colon+1;
 			clientinfo[i].port = atoi(port);
 			clientinfo[i].connected = 0;
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_STDOUT
 			printf("clientinfo[%d]: ip=%s, port=%d, connected=%d\n", i, clientinfo[i].ip, clientinfo[i].port, clientinfo.connected);
 #endif
 		}

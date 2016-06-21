@@ -14,6 +14,17 @@ extern "C" {
 
 sock_info *sockinfo = NULL;
 
+void init_sock_mgr() {
+	sockinfo = calloc(DESCRIPTOR_MAX, sizeof(sock_info));
+	if(sockinfo == NULL) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to calloc sockinfo, %S, %S, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+}
+
 // dbss作为服务端
 // 初始化服务器端socket
 void init_server() {
@@ -30,14 +41,24 @@ void init_server() {
 	addr.sin_port = htons(lsn_port);
 	inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr);
 	if(bind(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+#ifdef DEBUG_STDOUT
 		printf("Failed to bind, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
 	if(listen(fd, DESCRIPTOR_MAX) < 0) {
+#ifdef DEBUG_STDOUT
 		printf("Failed to listen, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		close(fd);
 		exit(EXIT_FAILURE);
+	}
+	if(sockinfo[fd].fd == 0) {
+		sockinfo[fd].fd = fd;
+		sockinfo[fd].type = TYPE_LISTEN;
 	}
 	epoll_addfd(efd, fd, EPOLLIN);
 }

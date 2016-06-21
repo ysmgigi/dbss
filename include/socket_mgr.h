@@ -13,13 +13,14 @@ typedef struct {
 	uint8_t type;	// 1-Client  2-Server 3-Listen
 	uint16_t port;
 	int32_t fd;
-	uint32_t ip;	// host order byte
+	uint32_t ip;	// network order byte
 }sock_info;
 
 extern sock_info *sockinfo;
 
 void init_server();
 void init_client();
+void init_sock_mgr();
 
 #endif
 

@@ -42,6 +42,7 @@ void epoll_delfd(int epollfd, int fd) {
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
+// 
 void epoll_init() {
 	efd = epoll_create(DESCRIPTOR_MAX);
 	if(efd < 0) {
@@ -71,6 +72,7 @@ void epoll_destroy() {
 		free(events);
 }
 
+// 
 void epoll_event_loop() {
 	int num = 0;
 	int fd = -1;
