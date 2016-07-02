@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 int efd = -1;
-struct epoll_event *enents = NULL;
+struct epoll_event *events = NULL;
 
 // ============ file descriptor & epoll 操作 ===============
 //

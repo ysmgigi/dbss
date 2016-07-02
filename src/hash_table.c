@@ -1,9 +1,13 @@
 #include "hash_table.h"
 #include <stdlib.h>
 
+#ifdef DEBUG_STDOUT
+#include <stdio.h>
+#endif
+
 // 
 void ht_create(ht_t *ht,  uint32_t size,  func_t fnc) {
-	int i = 0;
+	uint32_t i = 0;
 	if(fnc == NULL) {
 #ifdef DEBUG_STDOUT
 		printf("Key compare function is NULL, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);

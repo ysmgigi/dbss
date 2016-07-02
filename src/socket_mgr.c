@@ -18,7 +18,7 @@ void init_sock_mgr() {
 	sockinfo = calloc(DESCRIPTOR_MAX, sizeof(sock_info));
 	if(sockinfo == NULL) {
 #ifdef DEBUG_STDOUT
-		printf("Failed to calloc sockinfo, %S, %S, %d\n", __FUNCTION__, __FILE__, __LINE__);
+		printf("Failed to calloc sockinfo, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
 #else
 #endif
 		exit(EXIT_FAILURE);
