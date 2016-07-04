@@ -53,3 +53,7 @@ uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed) {
 	return hash;
 }
 
+uint32_t murmur(const char *key, uint32_t len) {
+	return murmur3_32(key, len, 0xbc9f1d34);
+}
+

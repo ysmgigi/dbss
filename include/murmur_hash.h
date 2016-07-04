@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
-uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed);
+#define SEED	0xbc9f1d34
+
+uint32_t murmur(const char *key,  uint32_t len);
 
 #endif
 
