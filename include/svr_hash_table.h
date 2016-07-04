@@ -2,6 +2,7 @@
 #define SERVER_HASH_TABLE_H
 
 #include <stdint.h>
+#include "hash_table.h"
 
 typedef struct {
 	uint16_t port;
