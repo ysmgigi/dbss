@@ -9,6 +9,7 @@
 #include "epoll_mgr.h"
 #include "sysctl.h"
 #include "general.h"
+#include "svr_hash_table.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,6 +59,8 @@ void init() {
 	read_table_config();
 	// 创建服务端socket
 	init_server();
+	// 初始化客户端hash table
+	init_svr_hash();
 	// 建立客户端socket,创建重连线程
 	init_client();
 }

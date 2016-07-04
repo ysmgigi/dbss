@@ -21,7 +21,6 @@ extern "C" {
 #define DATADEST_FILE		2
 
 typedef struct {
-	int8_t connected;
 	uint16_t port;
 	char ip[INET_ADDRSTRLEN];
 }client_info;

@@ -153,7 +153,6 @@ void read_sys_config() {
 			strncpy(clientinfo[i].ip, p, colon-p);
 			char *port = colon+1;
 			clientinfo[i].port = atoi(port);
-			clientinfo[i].connected = 0;
 #ifdef DEBUG_STDOUT
 			printf("clientinfo[%d]: ip=%s, port=%d, connected=%d\n", i, clientinfo[i].ip, clientinfo[i].port, clientinfo[i].connected);
 #endif

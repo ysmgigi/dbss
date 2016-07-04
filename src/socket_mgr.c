@@ -2,6 +2,8 @@
 #include "sysctl.h"
 #include "socket_mgr.h"
 #include "epoll_mgr.h"
+#include "hash_table.h"
+#include "svr_hash_table.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,21 +69,30 @@ void *reconnect_thread(void *arg) {
 	pthread_detach(pthread_self());
 	rte_atomic32_inc(&thread_num);
 	int i;
-	int remain = client_num;
 	struct timespec req = {20, 0};
-	while(rte_atomic32_read(&keep_running) && remain > 0) {
+	while(rte_atomic32_read(&keep_running)) {
 		for(i=0; i<client_num; ++i) {
-			// not connect to this server yet
-			if(clientinfo[i].connected == 0) {
+			slot_t *slot = &svr_hash.slots[i];
+			svr_t *svr = (svr_t*)slot->data;
+			pthread_spin_lock(&slot->lock);
+			if(slot->data != NULL && svr->connected == 0) {
 				// create socket
 				int fd = socket(AF_INET, SOCK_STREAM, 0);
 				if(fd < 0) {
+#ifdef DEBUG_STDOUT
 					printf("Failed to create socket for %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+					pthread_spin_unlock(&slot->lock);
 					continue;
 				}
 				if(fd >= DESCRIPTOR_MAX) {
+#ifdef DEBUG_STDOUT
 					printf("Too many connections %d/%d, %s, %s, %d\n", fd, DESCRIPTOR_MAX, __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 					close(fd);
+					pthread_spin_unlock(&slot->lock);
 					exit(EXIT_FAILURE);
 				}
 				// connect to server
@@ -92,12 +103,18 @@ void *reconnect_thread(void *arg) {
 				inet_pton(AF_INET, clientinfo[i].ip, &addr.sin_addr);
 				if(connect(fd, (struct sockaddr*)&addr, sizeof addr) < 0) {
 					if(errno != EINPROGRESS) {
+#ifdef DEBUG_STDOUT
 						printf("Failed to connect to %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
+#endif
 						close(fd);
+						pthread_spin_unlock(&slot->lock);
 						continue;
 					}
 				}
+				svr->connected = 1;
+				// to do: assign to fd manager
 			}
+			pthread_spin_unlock(&slot->lock);
 		}
 		nanosleep(&req, NULL);
 	}
@@ -111,7 +128,10 @@ void *reconnect_thread(void *arg) {
 void init_client() {
 	pthread_t tid;
 	if(pthread_create(&tid, NULL, reconnect_thread, NULL) != 0) {
+#ifdef DEBUG_STDOUT
 		printf("Failed to create connect_thread, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		exit(EXIT_FAILURE);
 	}
 }
