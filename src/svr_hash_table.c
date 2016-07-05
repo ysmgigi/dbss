@@ -35,6 +35,9 @@ void init_svr_hash() {
 		svr->ip = addr.s_addr;
 		svr->port = clientinfo[i].port;
 		svr->connected = 0;
+
+		key.ip = svr->ip;
+		key.port = svr->port;
 		pos = ht_insert(&svr_hash, &key, sizeof key, svr);
 		if(pos < 0) {
 #ifdef DEBUG_STDOUT

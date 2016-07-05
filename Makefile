@@ -18,7 +18,7 @@
 PS = c
 CC = gcc 
 #FLAGS = -Wall -g -O2 -Wextra -std=gnu99 -fno-strict-aliasing -fno-tree-pre -Wno-unused-parameter
-FLAGS = -Wall -g -O2 -Wextra -std=gnu99 -fno-strict-aliasing -fno-tree-pre -Wno-unused-parameter -DDEBUG_STDOUT
+FLAGS = -Wall -g -Wextra -std=gnu99 -fno-strict-aliasing -fno-tree-pre -Wno-unused-parameter -DDEBUG_STDOUT
 DEST := dbss
 LIBS :=  pthread clntsh
 LIBSDIR := $(ORACLE_HOME)
