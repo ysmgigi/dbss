@@ -66,21 +66,26 @@ void init_server() {
 }
 
 void *reconnect_thread(void *arg) {
+	int i;
 	pthread_detach(pthread_self());
 	rte_atomic32_inc(&thread_num);
-	int i;
+	char ip[INET_ADDRSTRLEN] = {0};
 	struct timespec req = {20, 0};
+	struct in_addr addr4 = {0};
 	while(rte_atomic32_read(&keep_running)) {
 		for(i=0; i<client_num; ++i) {
 			slot_t *slot = &svr_hash.slots[i];
 			svr_t *svr = (svr_t*)slot->data;
 			pthread_spin_lock(&slot->lock);
-			if(slot->data != NULL && svr->connected == 0) {
+			if(svr != NULL && svr->connected == 0) {
+				// get server ip string from uint32_t
+				addr4.s_addr = svr->ip;
+				inet_ntop(AF_INET, &addr4, ip, INET_ADDRSTRLEN);
 				// create socket
 				int fd = socket(AF_INET, SOCK_STREAM, 0);
 				if(fd < 0) {
 #ifdef DEBUG_STDOUT
-					printf("Failed to create socket for %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
+					printf("Failed to create socket for %s:%d, %s, %s, %d\n", ip, svr->port, __FUNCTION__, __FILE__, __LINE__);
 #else
 #endif
 					pthread_spin_unlock(&slot->lock);
@@ -99,12 +104,12 @@ void *reconnect_thread(void *arg) {
 				struct sockaddr_in addr;
 				memset(&addr, 0, sizeof addr);
 				addr.sin_family = AF_INET;
-				addr.sin_port = htons(clientinfo[i].port);
-				inet_pton(AF_INET, clientinfo[i].ip, &addr.sin_addr);
+				addr.sin_port = htons(svr->port);
+				addr.sin_addr.s_addr = svr->ip;
 				if(connect(fd, (struct sockaddr*)&addr, sizeof addr) < 0) {
 					if(errno != EINPROGRESS) {
 #ifdef DEBUG_STDOUT
-						printf("Failed to connect to %s:%d, %s, %s, %d\n", clientinfo[i].ip, clientinfo[i].port, __FUNCTION__, __FILE__, __LINE__);
+						printf("Failed to connect to %s:%d, %s, %s, %d\n", ip, svr->port, __FUNCTION__, __FILE__, __LINE__);
 #endif
 						close(fd);
 						pthread_spin_unlock(&slot->lock);
@@ -112,7 +117,10 @@ void *reconnect_thread(void *arg) {
 					}
 				}
 				svr->connected = 1;
-				// to do: assign to fd manager
+				// add to fd manager
+				sockinfo[fd].fd = fd;
+				sockinfo[fd].ip = svr->ip;
+				sockinfo[fd].type = TYPE_SERVER;
 			}
 			pthread_spin_unlock(&slot->lock);
 		}
