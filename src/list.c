@@ -5,7 +5,7 @@ extern "C" {
 #include "list.h"
 
 // init list to empty list
-int list_create(list_t *list) {
+void list_create(list_t *list) {
 	rte_atomic32_init(&list->num);
 	list->head = NULL;
 	list->tail = NULL;

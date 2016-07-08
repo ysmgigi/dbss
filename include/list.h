@@ -18,7 +18,7 @@ typedef struct list_s {
 	pthread_spinlock_t lock;
 }list_t;
 
-int list_create(list_t *list);
+void list_create(list_t *list);
 
 void list_destroy(list_t *list);
 
