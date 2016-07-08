@@ -14,11 +14,10 @@ int list_create(list_t *list) {
 
 // pop all node
 void list_destroy(list_t *list) {
-	pthread_spin_lock(&list->lock);
 	while(list_pop(list) != NULL) {
 		// do nothing
 	}
-	pthread_spin_unlock(&list->lock);
+	pthread_spin_destroy(&list->lock);
 }
 
 // insert a node to tail of list
