@@ -138,6 +138,31 @@ void close_client(int fd) {
 	close(fd);
 }
 
+// cleanup sockinfo struct which fd refered,
+// notify connect thread to rebuild connection.
+void notify_reconnect_thread(sock_info *sockinfo) {
+	int32_t pos;
+	svr_key key;
+	memset(&key, 0, sizeof key);
+	key.ip = sockinfo->ip;
+	key.port = sockinfo->port;
+	pos = ht_find(&svr_hash, &key, sizeof key);
+	if(pos < 0) {
+#ifdef DEBUG_STDOUT
+		printf("Fuck, server end not found?? %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+	slot_t *slot = svr_hash->slots[pos];
+	pthread_spin_lock(&slot->lock);
+	if(slot->data != NULL) {
+		svr_t *svr = (svr_t*)(slot->data);
+		svr->connected = 0;
+	}
+	pthread_spin_unlock(&slot->lock);
+}
+
 // 
 void epoll_event_loop() {
 	int num = 0;
@@ -163,6 +188,10 @@ void epoll_event_loop() {
 			}
 			// data from client, read data and put data into receive/send buffer.
 			else if(sockinfo[fd].type == TYPE_CLIENT && (event & EPOLLIN)) {
+				// to-do-list
+				// 1 - read one record from this socket
+				// 2 - push record to receiving queue
+				// 3 - push record to server sending queue
 			}
 			// client closed, close local socket and clean up sockinfo
 			else if(sockinfo[fd].type == TYPE_CLIENT && (event & EPOLLRDHUP)) {
@@ -170,9 +199,13 @@ void epoll_event_loop() {
 			}
 			// server can wirte, get data from its queue and send.
 			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLOUT)) {
+				// to-do-list
+				// 1 - get one record from server queue
+				// 2 - send it out towards this server
 			}
 			// server closed
 			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLRDHUP)) {
+				notify_reconnect_thread(&sockinfo[fd]);
 			}
 			// signal occured
 			else if(sockinfo[fd].type == TYPE_SIGNAL && (event & EPOLLIN)) {
