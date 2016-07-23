@@ -7,6 +7,7 @@
 #include "epoll_mgr.h"
 #include "rte_atomic.h"
 #include "socket_mgr.h"
+#include "svr_hash_table.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -154,7 +155,7 @@ void notify_reconnect_thread(sock_info *sockinfo) {
 #endif
 		exit(EXIT_FAILURE);
 	}
-	slot_t *slot = svr_hash->slots[pos];
+	slot_t *slot = &svr_hash.slots[pos];
 	pthread_spin_lock(&slot->lock);
 	if(slot->data != NULL) {
 		svr_t *svr = (svr_t*)(slot->data);
