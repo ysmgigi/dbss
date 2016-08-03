@@ -10,6 +10,7 @@
 #include "sysctl.h"
 #include "general.h"
 #include "svr_hash_table.h"
+#include "rcv_pool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,14 @@ void signal_destroy() {
 void init() {
 	rte_atomic32_init(&thread_num);
 	rte_atomic32_set(&keep_running, 1);
+	// 初始化接收缓存池
+	if(init_rcv_pool() < 0) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to create rcv pool, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
 	// 初始化连接管理结构
 	init_sock_mgr();
 	// 初始化epoll管理结构
