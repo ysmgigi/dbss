@@ -2,6 +2,7 @@
 #define RECEIVE_POOL_INCLUDE_H
 
 #include "rcv_buffer.h"
+#include "list.h"
 
 extern list_t rcv_pool;
 
