@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include "config.h"
 #include "general.h"
 #include "iniparser.h"
@@ -164,6 +166,34 @@ void read_sys_config() {
 
 // 读取表结构配置文件
 void read_table_config() {
+	DIR *dir = opendir(tblconf_dir);
+	if(dir == NULL) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to opend dir %s, %s, %s, %d\n", tblconf_dir, __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+	struct dirent *dirent = NULL;
+	uint16_t cnt = 0;
+	char inifiles[1024][1024];
+	memset(inifiles, 0, 1024*1024);
+	while((dirent = readdir(dir)) != NULL) {
+		int namelen = strlen(dirent->d_name);
+		if(namelen > 4 && dirent->d_name[namelen - 4] == '.' && dirent->d_name[namelen - 3] == 'i' && dirent->d_name[namelen - 2] == 'n' && dirent->d_name[namelen - 1] == 'i') { // .ini file
+			strcpy(inifiles[cnt], dirent->d_name);
+			++cnt;
+		}
+	}
+	closedir(dir);
+	int i = 0;
+	for(i=0; i<cnt; ++i) {
+#ifdef DEBUG_STDOUT
+		printf("table-config file: %s\n", inifiles[i]);
+#endif
+		//dictionary *inidic = iniparser_load(inifiles[i]);
+		//iniparser_freedict(inidic);
+	}
 }
 
 #ifdef __cplusplus

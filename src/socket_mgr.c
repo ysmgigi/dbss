@@ -73,7 +73,7 @@ void *reconnect_thread(void *arg) {
 	char ip[INET_ADDRSTRLEN] = {0};
 	struct timespec req = {20, 0};
 	struct in_addr addr4 = {0};
-	while(client_num > 0 && rte_atomic32_read(&keep_running)) {
+	while(rte_atomic32_read(&keep_running) && client_num > 0) {
 		for(i=0; i<client_num; ++i) {
 			slot_t *slot = &svr_hash.slots[i];
 			svr_t *svr = (svr_t*)slot->data;
