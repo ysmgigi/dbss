@@ -7,6 +7,8 @@
 #include "config.h"
 #include "general.h"
 #include "iniparser.h"
+#include "rcv_hash_table.h"
+#include "murmur_hash.h"
 
 // 配置文件全局变量声明及相关函数
 //
@@ -181,18 +183,37 @@ void read_table_config() {
 	while((dirent = readdir(dir)) != NULL) {
 		int namelen = strlen(dirent->d_name);
 		if(namelen > 4 && dirent->d_name[namelen - 4] == '.' && dirent->d_name[namelen - 3] == 'i' && dirent->d_name[namelen - 2] == 'n' && dirent->d_name[namelen - 1] == 'i') { // .ini file
+			if(cnt >= 1024) {
+#ifdef DEBUG_STDOUT
+				printf("Failed to store table config file, not enough space, %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+				closedir(dir);
+				exit(EXIT_FAILURE);
+			}
 			strcpy(inifiles[cnt], dirent->d_name);
 			++cnt;
 		}
 	}
 	closedir(dir);
+	// create receive hash, referenced by table id
+	if(cnt <= 0) {
+#ifdef DEBUG_STDOUT
+		printf("No table config file exist, check it! %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+	init_rcv_hash(&rcv_hash, cnt, &rcv_cmp, &murmur);
 	int i = 0;
+	table_info_t tbl_info;
+	memset(&tbl_info, 0, sizeof(table_info_t));
 	for(i=0; i<cnt; ++i) {
 #ifdef DEBUG_STDOUT
 		printf("table-config file: %s\n", inifiles[i]);
 #endif
-		//dictionary *inidic = iniparser_load(inifiles[i]);
-		//iniparser_freedict(inidic);
+		dictionary *inidic = iniparser_load(inifiles[i]);
+		iniparser_freedict(inidic);
 	}
 }
 

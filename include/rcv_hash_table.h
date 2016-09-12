@@ -10,7 +10,7 @@ typedef struct rcv_key_s {
 }rcv_key_t;
 
 typedef struct rcv_hash_data_s {
-	uint16_t table_id;
+	rcv_key_t key;
 	table_info_t table_info;
 	list_t queue;
 }rcv_hash_data_t;
@@ -18,6 +18,8 @@ typedef struct rcv_hash_data_s {
 extern ht_t rcv_hash;
 
 void init_rcv_hash(ht_t *rcvhash, uint32_t size, cmpfunc_t cmp, hashfunc_t hash);
+int rcv_cmp(void *key,  void *data);
+
 
 #endif
 

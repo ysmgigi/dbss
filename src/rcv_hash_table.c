@@ -7,9 +7,9 @@ extern "C" {
 ht_t rcv_hash;
 
 int rcv_cmp(void *key, void *data) {
-	rcv_key_t *rcvKey = (rcv_key_t*)key;
-	rcv_hash_data_t *d_st = (rcv_hash_data_t*)data;
-	return (rcvKey->table_id == d_st->table_id);
+	rcv_key_t *rcv_key = (rcv_key_t*)key;
+	rcv_hash_data_t *rhd = (rcv_hash_data_t*)data;
+	return (rcv_key->table_id == rhd->key.table_id);
 }
 
 void init_rcv_hash(ht_t *rcvhash, uint32_t size, cmpfunc_t cmp, hashfunc_t hash) {
