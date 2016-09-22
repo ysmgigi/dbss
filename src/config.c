@@ -166,6 +166,53 @@ void read_sys_config() {
 	iniparser_freedict(dic);
 }
 
+void parse_field(const char *file, const char *str, field_info_t *fld_info, int index) {
+	char *comma = NULL;
+	char buf[BYTE256] = {0};
+	strncpy(buf, str, BYTE256);
+	comma = strchr(buf, ',');
+	if(comma == NULL) {
+#ifdef DEBUG_STDOUT
+		printf("Failed to parse field of table config file %s, field %d, %s, %s, %d\n", file, index, __FUNCTION__, __FILE__, __LINE__);
+#endif
+		exit(EXIT_FAILURE);
+	}
+	*comma = '\0';
+	strcpy(fld_info->name, buf);
+	char *type = comma + 1;
+	char *precision = NULL;
+	comma = strchr(type, ',');
+	if(comma != NULL) {
+		*comma = '\0';
+		precision = comma + 1;
+	}
+	if(strcmp(type, "timestamp") == 0)
+		fld_info->type = FIELD_TYPE_TIMESTAMP;
+	if(strcmp(type, "numberic") == 0)
+		fld_info->type = FIELD_TYPE_NUMBERIC;
+	if(strcmp(type, "char") == 0)
+		fld_info->type = FIELD_TYPE_CHAR;
+	if(comma == NULL) {
+		if(fld_info->type == FIELD_TYPE_CHAR) {
+#ifdef DEBUG_STDOUT
+			printf("Field config error, %s, %s, %s, %d\n", file, __FUNCTION__, __FILE__, __LINE__);
+#endif
+			exit(EXIT_FAILURE);
+		}
+		else
+			return;
+	}
+	char *scale = NULL;
+	if(precision != NULL) {
+		fld_info->precision = atoi(precision);
+		comma = strchr(precision, ',');
+		if(comma != NULL) {
+		}
+	}
+	else {
+	}
+}
+
 // 读取表结构配置文件
 void read_table_config() {
 	DIR *dir = opendir(tblconf_dir);
@@ -205,6 +252,7 @@ void read_table_config() {
 		exit(EXIT_FAILURE);
 	}
 	init_rcv_hash(&rcv_hash, cnt, &rcv_cmp, &murmur);
+	char *p = NULL;
 	int i = 0;
 	table_info_t tbl_info;
 	memset(&tbl_info, 0, sizeof(table_info_t));
@@ -213,6 +261,28 @@ void read_table_config() {
 		printf("table-config file: %s\n", inifiles[i]);
 #endif
 		dictionary *inidic = iniparser_load(inifiles[i]);
+		tbl_info.box_id = iniparser_getint(inidic, "Basic:box_id", 0);
+		tbl_info.table_id = iniparser_getint(inidic, "Basic:table_id", 0);
+		tbl_info.time_window = iniparser_getint(inidic, "Basic:time_window", 0);
+		p = iniparser_getstring(inidic, "Basic:prefix", NULL);
+		p!=NULL ? strncpy(tbl_info.prefix, p, BYTE16) : 0;
+		tbl_info.field_num = iniparser_getint(inidic, "Field:num", 0);
+		int j=0;
+		char pattern[BYTE16] = {0};
+		for(j=0; j<tbl_info.field_num; ++j) {
+			memset(pattern, 0, BYTE8);
+			sprintf(pattern, "Field:f%d", j+1);
+			p = iniparser_getstring(inidic, pattern, NULL);
+			if(p != NULL) {
+				parse_field(inifiles[i], p, &tbl_info.cols[j], j+1);
+			}
+			else {
+#ifdef DEBUG_STDOUT
+				printf("In table config file %s, field %d empty, %s, %s, %d\n", inifiles[i], j+1, __FUNCTION__, __FILE__, __LINE__);
+#endif
+				exit(EXIT_FAILURE);
+			}
+		}
 		iniparser_freedict(inidic);
 	}
 }

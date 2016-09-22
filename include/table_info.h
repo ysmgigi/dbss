@@ -8,6 +8,14 @@
 #define FIELD_TYPE_TIMESTAMP	2
 #define FIELD_TYPE_NUMBERIC		3
 
+// 建表粒度定义
+// 60 * 60(hour)
+#define YYYYMMDDHH	3600
+// 24 * 60 * 60(day)
+#define YYYYMMDD	86400
+// 30 * 24 * 60 * 60(month)
+#define YYYYMM		2592000
+
 typedef struct field_info_s {
 	char name[BYTE64];
 	uint16_t type;
