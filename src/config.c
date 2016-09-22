@@ -55,12 +55,18 @@ void read_sys_config() {
 	dictionary *dic = 0;
 	home = getenv("HOME");
 	if(home == NULL) {
+#ifdef DEBUG_STDOUT
 		printf("Failed to get env HOME,%s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		exit(EXIT_FAILURE);
 	}
 	snprintf(inifile, BYTE128, "%s/conf/dbinfo.ini", home);
 	if(access(inifile, F_OK) != 0) {
+#ifdef DEBUG_STDOUT
 		printf("System config file does not exist, check it,%s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
 		exit(EXIT_FAILURE);
 	}
 	dic = iniparser_load(inifile);
@@ -167,50 +173,77 @@ void read_sys_config() {
 }
 
 void parse_field(const char *file, const char *str, field_info_t *fld_info, int index) {
+	int i = 0;
 	char *comma = NULL;
+	char *p = str;
 	char buf[BYTE256] = {0};
-	strncpy(buf, str, BYTE256);
-	comma = strchr(buf, ',');
+	// ignore space and '\t'
+	while(*p != '\0') {
+		if(*p != ' ' && *p != '\t') {
+			buf[i] = *p;
+			++i;
+		}
+		++p;
+	}
+	p = buf;
+	comma = strchr(p, ',');
 	if(comma == NULL) {
 #ifdef DEBUG_STDOUT
 		printf("Failed to parse field of table config file %s, field %d, %s, %s, %d\n", file, index, __FUNCTION__, __FILE__, __LINE__);
+#else
 #endif
 		exit(EXIT_FAILURE);
 	}
 	*comma = '\0';
-	strcpy(fld_info->name, buf);
-	char *type = comma + 1;
-	char *precision = NULL;
-	comma = strchr(type, ',');
-	if(comma != NULL) {
-		*comma = '\0';
-		precision = comma + 1;
-	}
-	if(strcmp(type, "timestamp") == 0)
-		fld_info->type = FIELD_TYPE_TIMESTAMP;
-	if(strcmp(type, "numberic") == 0)
-		fld_info->type = FIELD_TYPE_NUMBERIC;
-	if(strcmp(type, "char") == 0)
-		fld_info->type = FIELD_TYPE_CHAR;
+	strcpy(fld_info->name, p);
+	p = comma + 1;
+	// now, 'p' point to first charater of 'type'
+	comma = strchr(p, ',');
 	if(comma == NULL) {
-		if(fld_info->type == FIELD_TYPE_CHAR) {
+		// not timestamp, format error
+		if(strcasecmp(fld_info->name, "timestamp") != 0) {
 #ifdef DEBUG_STDOUT
-			printf("Field config error, %s, %s, %s, %d\n", file, __FUNCTION__, __FILE__, __LINE__);
+			printf("Failed to parse field of table config file %s, field %d, %s, %s, %d\n", file, index, __FUNCTION__, __FILE__, __LINE__);
+#else
 #endif
 			exit(EXIT_FAILURE);
 		}
-		else
+		// timestamp, successful and return
+		else {
+			fld_info->type = FIELD_TYPE_TIMESTAMP;
+			// default precision of timestamp used in oracle is 6, we use 9 by default
+			fld_info->precision = 9;
 			return;
-	}
-	char *scale = NULL;
-	if(precision != NULL) {
-		fld_info->precision = atoi(precision);
-		comma = strchr(precision, ',');
-		if(comma != NULL) {
 		}
 	}
+	*comma = '\0';
+	if(strcasecmp(p, "numeric") == 0 || strcasecmp(p, "number") == 0)
+		fld_info->type = FIELD_TYPE_NUMBERIC;
+	else if(strcasecmp(p, "char") == 0 || strcasecmp(p, "varchar2") == 0 || strcasecmp(p, "nchar") == 0 || strcasecmp(p, "nvarchar2") == 0)
+		fld_info->type = FIELD_TYPE_CHAR;
 	else {
+#ifdef DEBUG_STDOUT
+		printf("Filed type support 'timestamp, numeric(number), char, varchar2, nchar, nvarchar2' only, %s, field %d, %s, %s, %d\n", file, index, __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
 	}
+	p = comma + 1;
+	// now, 'p' points to begin of precision
+	comma = strchr(p, ',');
+	// ok, no scale parameter, parse done and return
+	if(comma == NULL) {
+		// for char type(char, nchar, varchar2, nvarchar2), precision is the max size of bytes or characters filed can be able to store, scale no use
+		// and for number type, precision means precision, scale means scale
+		fld_info->precision = atoi(p);
+		return;
+	}
+	*comma = '\0';
+	fld_info->precision = atoi(p);
+	p = comma + 1;
+	// now, 'p' points to begin of scale
+	fld_info->scale = atoi(p);
+	// parse done
 }
 
 // 读取表结构配置文件
@@ -279,6 +312,7 @@ void read_table_config() {
 			else {
 #ifdef DEBUG_STDOUT
 				printf("In table config file %s, field %d empty, %s, %s, %d\n", inifiles[i], j+1, __FUNCTION__, __FILE__, __LINE__);
+#else
 #endif
 				exit(EXIT_FAILURE);
 			}
