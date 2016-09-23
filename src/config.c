@@ -175,7 +175,7 @@ void read_sys_config() {
 void parse_field(const char *file, const char *str, field_info_t *fld_info, int index) {
 	int i = 0;
 	char *comma = NULL;
-	char *p = str;
+	char *p = (char*)str;
 	char buf[BYTE256] = {0};
 	// ignore space and '\t'
 	while(*p != '\0') {
