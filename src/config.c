@@ -288,8 +288,9 @@ void read_table_config() {
 	char *p = NULL;
 	int i = 0;
 	table_info_t tbl_info;
-	memset(&tbl_info, 0, sizeof(table_info_t));
+	// parse files one by one
 	for(i=0; i<cnt; ++i) {
+		memset(&tbl_info, 0, sizeof(table_info_t));
 #ifdef DEBUG_STDOUT
 		printf("table-config file: %s\n", inifiles[i]);
 #endif
@@ -302,6 +303,7 @@ void read_table_config() {
 		tbl_info.field_num = iniparser_getint(inidic, "Field:num", 0);
 		int j=0;
 		char pattern[BYTE16] = {0};
+		// parse fields one by one
 		for(j=0; j<tbl_info.field_num; ++j) {
 			memset(pattern, 0, BYTE8);
 			sprintf(pattern, "Field:f%d", j+1);
@@ -317,6 +319,8 @@ void read_table_config() {
 				exit(EXIT_FAILURE);
 			}
 		}
+		// to-do-list
+		// add table info to rcv hash
 		iniparser_freedict(inidic);
 	}
 }
