@@ -319,8 +319,24 @@ void read_table_config() {
 				exit(EXIT_FAILURE);
 			}
 		}
-		// to-do-list
-		// add table info to rcv hash
+		// construct key
+		rcv_key_t key;
+		memset(&key, 0, sizeof(key));
+		key.table_id = tbl_info.table_id;
+		// alloc space for new hash entry and assignment
+		rcv_hash_data_t *data = calloc(1, sizeof(rcv_hash_data_t));
+		memcpy(&data->table_info, &tbl_info, sizeof(table_info_t));
+		memcpy(&data->key, &key, sizeof(rcv_key_t));
+		// if not find entry referenced by 'key', insert to rcv hash
+		if(ht_find(&rcv_hash, &key, sizeof(rcv_key_t)) < 0) {
+			if(ht_insert(&rcv_hash, &key, sizeof(rcv_key_t), data) < 0) {
+#ifdef DEBUG_STDOUT
+				printf("Failed to insert into rcv_hash, cfg file %s, %s, %s, %d\n", inifiles[i], __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+				exit(EXIT_FAILURE);
+			}
+		}
 		iniparser_freedict(inidic);
 	}
 }
