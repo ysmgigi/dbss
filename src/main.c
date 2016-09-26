@@ -77,7 +77,7 @@ void init() {
 int main(int argc, char *argv[]) {
 	// init system resource
 	init();
-	// epoll events loop(new socet connections, signals, read/write events)
+	// epoll events loop(new socket connections, signals, socket read/write events)
 	epoll_event_loop();
 	// signal cleanup
 	if(rte_atomic32_read(&keep_running) == 0) {
