@@ -151,12 +151,12 @@ void close_client(int fd) {
 
 // cleanup sockinfo struct which fd refered,
 // notify connect thread to rebuild connection.
-void notify_reconnect_thread(sock_info *sockinfo) {
+void notify_reconnect_thread(sock_info *socketinfo) {
 	int32_t pos;
 	svr_key key;
 	memset(&key, 0, sizeof key);
-	key.ip = sockinfo->ip;
-	key.port = sockinfo->port;
+	key.ip = socketinfo->ip;
+	key.port = socketinfo->port;
 	pos = ht_find(&svr_hash, &key, sizeof key);
 	if(pos < 0) {
 #ifdef DEBUG_STDOUT
@@ -185,6 +185,46 @@ void notify_reconnect_thread(sock_info *sockinfo) {
 		svr->connected = 0;
 	}
 	pthread_spin_unlock(&slot->lock);
+}
+
+// send data to server end socket
+void server_send(sock_info *socetinfo, int fd) {
+	int32_t pos;
+	svr_key key;
+	memset(&key, 0, sizeof key);
+	key.ip = socketinfo->ip;
+	key.port = socketinfo->port;
+	pos = ht_find(&svr_hash, &key, sizeof key);
+	if(pos < 0) {
+#ifdef DEBUG_STDOUT
+		printf("Fuck, server end not found?? %s, %s, %d\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#endif
+		exit(EXIT_FAILURE);
+	}
+	list_t queue;
+	list_create(&queue);
+	// split list from send queue
+	slot_t *slot = &svr_hash.slots[pos];
+	pthread_spin_lock(&slot->lock);
+	if(slot->data != NULL) {
+		svr_t *svr = (svr_t*)(slot->data);
+		list_split(&svr->queue, &queue);
+	}
+	pthread_spin_unlock(&slot->lock);
+	node_t *node = NULL;
+	while((node = list_pop(&queue)) != NULL) {
+		rcv_buf_t *buf = (rcv_buf_t*)(node->data);
+		// send to server end socket
+		sendn(fd, buf->buf, buf->len);
+		// clear buffer
+		memset(buf, 0, sizeof(rcv_buf_t));
+		// clear bidirectional pointer
+		node->prev = NULL;
+		node->next = NULL;
+		// give node back to receive pool
+		list_push(&rcv_pool, node);
+	}
 }
 
 // 
@@ -226,6 +266,7 @@ void epoll_event_loop() {
 				// to-do-list
 				// 1 - get one record from server queue
 				// 2 - send it out towards this server
+				server_send(&sockinfo[fd], fd);
 			}
 			// server closed
 			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLRDHUP)) {
