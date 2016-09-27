@@ -130,8 +130,18 @@ void accept_client(int lsnfd) {
 	}
 }
 
-// clean up sockinfo and close client fd
+// clean up sockinfo and close client fd and  empty receive queue
 void close_client(int fd) {
+	node_t *node = NULL;
+	// empty reveive queue
+	while((node = &sockinfo[fd].queue.pop()) != NULL) {
+		// clear rcv_buf_t and bidirectional pointer
+		memset(node->data, 0, sizeof(rcv_buf_t));
+		node->next = NULL;
+		node->prev = NULL;
+		// give it back to receive buffer pool
+		rcv_pool.push(node);
+	}
 	sockinfo[fd].fd = 0;
 	sockinfo[fd].type = 0;
 	sockinfo[fd].ip = 0;
