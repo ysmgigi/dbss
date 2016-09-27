@@ -140,7 +140,7 @@ void close_client(int fd) {
 		node->next = NULL;
 		node->prev = NULL;
 		// give it back to receive buffer pool
-		rcv_pool.push(node);
+		list_push(&rcv_pool, node);
 	}
 	sockinfo[fd].fd = 0;
 	sockinfo[fd].type = 0;
@@ -165,10 +165,23 @@ void notify_reconnect_thread(sock_info *sockinfo) {
 #endif
 		exit(EXIT_FAILURE);
 	}
+	node_t *node = NULL;
 	slot_t *slot = &svr_hash.slots[pos];
 	pthread_spin_lock(&slot->lock);
+	// assertion 'slot->data != NULL' is always true
 	if(slot->data != NULL) {
 		svr_t *svr = (svr_t*)(slot->data);
+		// empty send queue
+		while((node = list_pop(&svr->queue)) != NULL) {
+			// clear receive buffer
+			memset(node->data, 0, sizeof(rcv_buf_t));
+			// clear bidirectional pointer
+			node->next = NULL;
+			node->prev = NULL;
+			// give node back to recieve buffer pool
+			list_push(&svr->queue, node);
+		}
+		// set disconnect flag
 		svr->connected = 0;
 	}
 	pthread_spin_unlock(&slot->lock);
