@@ -46,7 +46,7 @@ void epoll_delfd(int epollfd, int fd) {
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
-// 
+// 创建epoll
 void epoll_init() {
 	efd = epoll_create(DESCRIPTOR_MAX);
 	if(efd < 0) {
@@ -130,18 +130,19 @@ void accept_client(int lsnfd) {
 	}
 }
 
-// clean up sockinfo and close client fd and  empty receive queue
+// clean up sockinfo and close client fd.
 void close_client(int fd) {
-	node_t *node = NULL;
-	// empty reveive queue
-	while((node = &sockinfo[fd].queue.pop()) != NULL) {
-		// clear rcv_buf_t and bidirectional pointer
-		memset(node->data, 0, sizeof(rcv_buf_t));
-		node->next = NULL;
-		node->prev = NULL;
-		// give it back to receive buffer pool
-		list_push(&rcv_pool, node);
-	}
+	// hoo ..., need not clean receive queue
+	//node_t *node = NULL;
+	//// empty reveive queue
+	//while((node = &sockinfo[fd].queue.pop()) != NULL) {
+	//	// clear rcv_buf_t and bidirectional pointer
+	//	memset(node->data, 0, sizeof(rcv_buf_t));
+	//	node->next = NULL;
+	//	node->prev = NULL;
+	//	// give it back to receive buffer pool
+	//	list_push(&rcv_pool, node);
+	//}
 	sockinfo[fd].fd = 0;
 	sockinfo[fd].type = 0;
 	sockinfo[fd].ip = 0;
@@ -188,9 +189,10 @@ void notify_reconnect_thread(sock_info *socketinfo) {
 }
 
 // send data to server end socket
-void server_send(sock_info *socetinfo, int fd) {
+void server_send(int fd) {
 	int32_t pos;
 	svr_key key;
+	sock_info *socketinfo = &sockinfo[fd];
 	memset(&key, 0, sizeof key);
 	key.ip = socketinfo->ip;
 	key.port = socketinfo->port;
@@ -266,7 +268,7 @@ void epoll_event_loop() {
 				// to-do-list
 				// 1 - get one record from server queue
 				// 2 - send it out towards this server
-				server_send(&sockinfo[fd], fd);
+				server_send(fd);
 			}
 			// server closed
 			else if(sockinfo[fd].type == TYPE_SERVER && (event & EPOLLRDHUP)) {
