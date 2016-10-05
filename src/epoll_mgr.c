@@ -7,6 +7,8 @@
 #include "epoll_mgr.h"
 #include "rte_atomic.h"
 #include "socket_mgr.h"
+#include "rcv_buffer.h"
+#include "rcv_pool.h"
 #include "svr_hash_table.h"
 
 #ifdef __cplusplus
