@@ -190,6 +190,26 @@ void notify_reconnect_thread(sock_info *socketinfo) {
 	pthread_spin_unlock(&slot->lock);
 }
 
+ssize_t writen(int fd, char *ptr, size_t n) {
+	size_t		nleft;
+	ssize_t		nwritten;
+
+	nleft = n;
+	while (nleft > 0) {
+		if ((nwritten = write(fd, ptr, nleft)) < 0) {
+			if (nleft == n)
+				return(-1); /* error, return -1 */
+			else
+				break;      /* error, return amount written so far */
+		} else if (nwritten == 0) {
+			break;
+		}
+		nleft -= nwritten;
+		ptr   += nwritten;
+	}
+	return(n - nleft);      /* return >= 0 */
+}
+
 // send data to server end socket
 void server_send(int fd) {
 	int32_t pos;
@@ -220,7 +240,7 @@ void server_send(int fd) {
 	while((node = list_pop(&queue)) != NULL) {
 		rcv_buf_t *buf = (rcv_buf_t*)(node->data);
 		// send to server end socket
-		sendn(fd, buf->buf, buf->len);
+		writen(fd, buf->buf, buf->len);
 		// clear buffer
 		memset(buf, 0, sizeof(rcv_buf_t));
 		// clear bidirectional pointer
